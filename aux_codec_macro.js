@@ -13,7 +13,7 @@ IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 or implied.
 */
 
-const xapi = require('xapi');
+import xapi from 'xapi';
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // INSTALLER SETTINGS
