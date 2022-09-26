@@ -15,7 +15,7 @@ or implied.
 // REQUIREMENTS
 /////////////////////////////////////////////////////////////////////////////////////////
 
-const xapi = require('xapi');
+import xapi from 'xapi';
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // INSTALLER SETTINGS
@@ -226,7 +226,7 @@ let has_SpeakerTrack= MAP_CAMERA_SOURCES.indexOf(SP) != -1 ||
 /////////////////////////////////////////////////////////////////////////////////////////
 // VARIABLES
 /////////////////////////////////////////////////////////////////////////////////////////
-let AUX_CODEC={ enable: (AUX_CODEC_IP!='') , online: false, url: AUX_CODEC_IP, auth: AUX_CODEC_AUTH};
+let aux_codec={ enable: (AUX_CODEC_IP!='') , online: false, url: AUX_CODEC_IP, auth: AUX_CODEC_AUTH};
 let micArrays={};
 for (var i in MICROPHONE_CONNECTORS) {
     micArrays[MICROPHONE_CONNECTORS[i].toString()]=[0,0,0,0];
@@ -540,7 +540,7 @@ async function makeCameraSwitch(input, average) {
 
 
   // send required messages to auxiliary codec that also turns on speakertrack over there
-  sendIntercodecMessage(AUX_CODEC, 'automatic_mode');
+  sendIntercodecMessage(aux_codec, 'automatic_mode');
   lastActiveHighInput = input;
   restartNewSpeakerTimer();
 }
@@ -654,7 +654,7 @@ async function recallSideBySideMode() {
         }
     }
   // send required messages to other codecs
-  sendIntercodecMessage(AUX_CODEC, 'side_by_side');
+  sendIntercodecMessage(aux_codec, 'side_by_side');
   lastActiveHighInput = 0;
   lowWasRecalled = true;
 }
@@ -718,14 +718,14 @@ function handleError(error) {
 /////////////////////////////////////////////////////////////////////////////////////////
 
 function sendIntercodecMessage(codec, message) {
-  if (codec.enable) {
-    console.log(`sendIntercodecMessage: codec = ${codec.url} | message = ${message}`);
+  if (aux_codec.enable) {
+    console.log(`sendIntercodecMessage: codec = ${aux_codec.url} | message = ${message}`);
 
-    let url = 'https://' + codec.url + '/putxml';
+    let url = 'https://' + aux_codec.url + '/putxml';
     
     let headers = [
       'Content-Type: text/xml',
-      'Authorization: Basic ' + codec.auth
+      'Authorization: Basic ' + aux_codec.auth
     ];
 
     let payload = "<Command><Message><Send><Text>"+ message +"</Text></Send></Message></Command>";
@@ -782,7 +782,7 @@ function handleMicMuteOff() {
 function handleMessage(event) {
   switch(event.Text) {
     case "VTC-1_OK":
-      handleCodecOnline(AUX_CODEC);
+      handleCodecOnline(aux_codec);
       break;
   }
 }
@@ -790,18 +790,18 @@ function handleMessage(event) {
 // function to check the satus of the macros running on the AUX codec
 function handleMacroStatus() {
   console.log('handleMacroStatus');
-  if (AUX_CODEC.enable) {
+  if (aux_codec.enable) {
       // reset tracker of responses from AUX codec
-      AUX_CODEC.online = false;
+      aux_codec.online = false;
       // send required messages to AUX codec
-      sendIntercodecMessage(AUX_CODEC, 'VTC-1_status');
+      sendIntercodecMessage(aux_codec, 'VTC-1_status');
   }
 }
 
 function handleCodecOnline(codec) {
-    if (codec.enable) {
-      console.log(`handleCodecOnline: codec = ${codec.url}`);
-      codec.online = true;
+    if (aux_codec.enable) {
+      console.log(`handleCodecOnline: codec = ${aux_codec.url}`);
+      aux_codec.online = true;
   }
 }
 
@@ -810,8 +810,8 @@ function handleWakeUp() {
   // stop automatic switching behavior
   stopAutomation();
   // send wakeup to AUX codec
-  sendIntercodecMessage(AUX_CODEC, 'wake_up');
-  // check the satus of the macros running on the AUX codec and store it in AUX_CODEC.online
+  sendIntercodecMessage(aux_codec, 'wake_up');
+  // check the satus of the macros running on the AUX codec and store it in aux_codec.online
   // in case we need to check it in some other function
   handleMacroStatus();
 }
@@ -819,7 +819,7 @@ function handleWakeUp() {
 function handleShutDown() {
   console.log('handleShutDown');
   // send required messages to other codecs
-  sendIntercodecMessage(AUX_CODEC, 'shut_down');
+  sendIntercodecMessage(aux_codec, 'shut_down');
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -851,8 +851,6 @@ function onSideBySideTimerExpired() {
   recallSideBySideMode();
 }
 
-
-
 function startInitialCallTimer() {
   if (InitialCallTimer == null) {
     allowCameraSwitching = false;
@@ -864,7 +862,6 @@ function onInitialCallTimerExpired() {
   console.log('onInitialCallTimerExpired');
   allowCameraSwitching = true;
   if (has_SpeakerTrack) xapi.command('Cameras SpeakerTrack Activate').catch(handleError);
-
 }
 
 function startNewSpeakerTimer() {
