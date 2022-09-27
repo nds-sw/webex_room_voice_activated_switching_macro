@@ -1,10 +1,10 @@
 <Extensions>
-  <Version>1.8</Version>
+  <Version>1.9</Version>
   <Panel>
     <Order>1</Order>
     <PanelId>panel_manual_override</PanelId>
     <Origin>local</Origin>
-    <Type>Statusbar</Type>
+    <Location>HomeScreenAndCallControls</Location>
     <Icon>Camera</Icon>
     <Color>#07C1E4</Color>
     <Name>Camera Control</Name>
@@ -69,8 +69,37 @@
           <Options>size=2;fontSize=normal;align=center</Options>
         </Widget>
       </Row>
+      <Row>
+        <Name/>
+        <Widget>
+          <WidgetId>widget_17</WidgetId>
+          <Name>PresenterTrack</Name>
+          <Type>Text</Type>
+          <Options>size=2;fontSize=normal;align=center</Options>
+        </Widget>
+      </Row>
+      <Row>
+        <Name>Row</Name>
+        <Widget>
+          <WidgetId>widget_19</WidgetId>
+          <Name>Off</Name>
+          <Type>Text</Type>
+          <Options>size=1;fontSize=normal;align=center</Options>
+        </Widget>
+        <Widget>
+          <WidgetId>widget_pt</WidgetId>
+          <Type>ToggleButton</Type>
+          <Options>size=1</Options>
+        </Widget>
+        <Widget>
+          <WidgetId>widget_18</WidgetId>
+          <Name>On</Name>
+          <Type>Text</Type>
+          <Options>size=1;fontSize=normal;align=center</Options>
+        </Widget>
+      </Row>
       <PageId>panel_manual_override</PageId>
-      <Options/>
+      <Options>hideRowNames=1</Options>
     </Page>
   </Panel>
 </Extensions>
