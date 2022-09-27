@@ -39,7 +39,13 @@ const AUX_CODEC_USERNAME='username';
 const AUX_CODEC_PASSWORD='password';
 
 // Video source and SpeakerTrack constants needed for defining mapping. DO NOT EDIT
-const  SP=0, V1=1, V2=2
+const  SP=0, V1=1, V2=2, V3=3
+
+// PresenterTrack SourceID (if exists)
+const presenterTrackConnectorID = V2;
+
+// Start Automation on Wake
+const wakeAutomation = true;
 
 /*
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -240,6 +246,7 @@ let allowCameraSwitching = false;
 let allowNewSpeaker = true;
 let newSpeakerTimer = null;
 let manual_mode = true;
+let lastStateAuto = false ;
 let lastActivePTZCameraZoneObj=Z0;
 let lastActivePTZCameraZoneCamera='0';
 
@@ -371,19 +378,35 @@ function init() {
     // register to receive events when someone manually turns on full screen mode
     // so we can keep the custom toggle button in the right state if also in self view
     xapi.Status.Video.Selfview.FullscreenMode.on(evalFullScreenEvent);
-
-    // next, set Automatic mode toggle switch on custom panel off since the macro starts that way
-    xapi.command('UserInterface Extensions Widget SetValue', {WidgetId: 'widget_override', Value: 'off'});
-
+   
+    // check to see if wakeAutomation is true and set mode toggle switch appropriately
+    if (wakeAutomation) {
+        startAutomation();
+        xapi.command('UserInterface Extensions Widget SetValue', {WidgetId: 'widget_override', Value: 'on'});
+    }
+    else {
+        xapi.command('UserInterface Extensions Widget SetValue', {WidgetId: 'widget_override', Value: 'off'});
+    }
 }
 
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// PRESENTERTRACK FUNCTIONS
+/////////////////////////////////////////////////////////////////////////////////////////
+
+function enablePresenterTrack() {
+  xapi.command('Video Input SetMainVideoSource', {ConnectorId: presenterTrackConnectorID}).catch(handleError);
+  xapi.command('Cameras PresenterTrack Set', {Mode: 'Follow'}).catch(handleError);
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // START/STOP AUTOMATION FUNCTIONS
 /////////////////////////////////////////////////////////////////////////////////////////
 
 function startAutomation() {
-  console.log('startAutomation');
+   console.log('startAutomation');
+   //disable PresenterTrack
+   xapi.command('Cameras PresenterTrack Set', {Mode: 'Off'}).catch(handleError);
    //setting overall manual mode to false
    manual_mode = false;
    allowCameraSwitching = true;
@@ -668,11 +691,11 @@ function handleOverrideWidget(event)
 {
          if (event.WidgetId === 'widget_override')
          {
-            console.log("Camera Control button selected.....")
+            console.log("Camera Control button selected.....");
             if (event.Value === 'off') {
 
                     console.log("Camera Control is set to Manual...");
-                    console.log("Stopping automation...")
+                    console.log("Stopping automation...");
                     stopAutomation();
                 }
                else
@@ -680,26 +703,46 @@ function handleOverrideWidget(event)
 
                   // start VuMeter monitoring
                   console.log("Camera Control is set to Automatic...");
-                  console.log("Starting automation...")
+                  console.log("Starting automation...");
                   startAutomation();
                }
          }
 
-
          if (event.WidgetId === 'widget_FS_selfview')
          {
-            console.log("Selfview button selected.....")
+            console.log("Selfview button selected.....");
             if (event.Value === 'off') {
                     console.log("Selfview is set to Off...");
-                    console.log("turning off self-view...")
+                    console.log("turning off self-view...");
                     xapi.Command.Video.Selfview.Set({ FullscreenMode: 'Off', Mode: 'Off', OnMonitorRole: 'First'});
                 }
                else
                {
                   console.log("Selfview is set to On...");
-                  console.log("turning on self-view...")
+                  console.log("turning on self-view...");
                   // TODO: determine if turning off self-view should also turn off fullscreenmode
                   xapi.Command.Video.Selfview.Set({ FullscreenMode: 'On', Mode: 'On', OnMonitorRole: 'First'});
+               }
+         }
+
+         if (event.WidgetId === 'widget_pt')
+         {
+            console.log("PresenterTrack button selected.....");
+            if (event.Value === 'off') {
+                    console.log("PresenterTrack deactivating...");
+                    recallSideBySideMode();
+                    console.log("Starting automation if it was enabled previously...");
+                    if (lastStateAuto) startAutomation();
+                }
+               else
+               {
+                  if (manual_mode == false) {
+                    lastStateAuto = true;
+                    console.log("Stopping automation...");
+                    stopAutomation();
+                  }
+                  console.log("PresenterTrack activating...");
+                  enablePresenterTrack();
                }
          }
 }
@@ -738,7 +781,7 @@ function sendIntercodecMessage(codec, message) {
             }
             else {
                 console.log("Error "+response.StatusCode+" sending message to Aux: ",response.StatusCode);
-                alertFailedIntercodecComm(errMessage1);
+                alertFailedOnScreen(errMessage1);
             }
         })
       .catch((err) => {
@@ -747,12 +790,12 @@ function sendIntercodecMessage(codec, message) {
         } else {
           console.log("Sending message failed: "+err.message);
         }
-        alertFailedIntercodecComm(errMessage2);
+        alertFailedOnScreen(errMessage2);
       });
   };
 }
 
-function alertFailedIntercodecComm(message) {
+function alertFailedOnScreen(message) {
         xapi.command("UserInterface Message Alert Display", {
         Text: message
       , Duration: 10
@@ -802,6 +845,7 @@ function handleCodecOnline(codec) {
     if (aux_codec.enable) {
       console.log(`handleCodecOnline: codec = ${aux_codec.url}`);
       aux_codec.online = true;
+      if (wakeAutomation == true && manual_mode == true) startAutomation();
   }
 }
 
